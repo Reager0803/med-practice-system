@@ -46,6 +46,22 @@ public class Patient {
         this.primaryCareDoctor = primaryCareDoctor;
     }
 
+    public Patient(String lastName, String middleName, String firstName, String address, String city, String state, String zip, String phone, Long age, Long height, Long weight, String insurance, String primaryCareDoctor) {
+        this.lastName = lastName;
+        this.middleName = middleName;
+        this.firstName = firstName;
+        this.address = address;
+        this.city = city;
+        this.state = state;
+        this.zip = zip;
+        this.phone = phone;
+        this.age = age;
+        this.height = height;
+        this.weight = weight;
+        this.insurance = insurance;
+        this.primaryCareDoctor = primaryCareDoctor;
+    }
+
     public Long getId() {
         return id;
     }

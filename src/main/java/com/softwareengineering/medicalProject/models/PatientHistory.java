@@ -33,6 +33,13 @@ public class PatientHistory {
         this.doctor = doctor;
     }
 
+    public PatientHistory(Long patientIDKey, Long procedureIDKey, LocalDateTime dateOfProcedure, String doctor) {
+        this.patientIDKey = patientIDKey;
+        this.procedureIDKey = procedureIDKey;
+        this.dateOfProcedure = dateOfProcedure;
+        this.doctor = doctor;
+    }
+
     public Long getId() {
         return id;
     }
