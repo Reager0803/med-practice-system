@@ -15,12 +15,12 @@ public class PatientHistory {
     private Long id;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "patientID")
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "patientID")
     private Long patientIDKey;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY)
+//    @ManyToMany(fetch = FetchType.LAZY)
     private Long procedureIDKey;
 
     private LocalDateTime dateOfProcedure;
