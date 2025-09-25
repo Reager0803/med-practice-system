@@ -24,7 +24,23 @@ public class ProcedureService {
         return procedureRepository.findByProcedureName(procedureName).orElse(null);
     }
 
-//    public Procedure addProcedure() {
-//
-//    }
+    public Procedure addProcedure(String procedureName) {
+        Procedure procedure = new Procedure();
+        procedure.setProcedureName(procedureName);
+        return procedureRepository.save(procedure);
+    }
+
+    public Procedure upsertProcedure(Long id, String procedureName) {
+        Procedure procedure = procedureRepository.findById(id).orElse(null);
+        if (procedure == null) {
+            procedure = new Procedure();
+        }
+        procedure.setId(id);
+        procedure.setProcedureName(procedureName);
+        return procedureRepository.save(procedure);
+    }
+
+    public void deleteProcedure(Long id) {
+        procedureRepository.deleteById(id);
+    }
 }
