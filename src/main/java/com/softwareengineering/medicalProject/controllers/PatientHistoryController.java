@@ -2,12 +2,14 @@ package com.softwareengineering.medicalProject.controllers;
 
 import com.softwareengineering.medicalProject.models.PatientHistory;
 import com.softwareengineering.medicalProject.services.PatientHistoryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
 @RestController
 public class PatientHistoryController {
+    @Autowired
     private final PatientHistoryService patientHistoryService;
 
     public PatientHistoryController(PatientHistoryService patientHistoryService) {
@@ -23,7 +25,6 @@ public class PatientHistoryController {
     public PatientHistory getPatientHistory(@RequestParam Long id) {
         return patientHistoryService.getPatientHistory(id);
     }
-
 
 
     @PostMapping("/addPatientHistory")

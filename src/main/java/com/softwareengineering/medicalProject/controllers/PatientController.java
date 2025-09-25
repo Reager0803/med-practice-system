@@ -2,10 +2,12 @@ package com.softwareengineering.medicalProject.controllers;
 
 import com.softwareengineering.medicalProject.models.Patient;
 import com.softwareengineering.medicalProject.services.PatientService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class PatientController {
+    @Autowired
     private final PatientService patientService;
 
     public PatientController(PatientService patientService) {
