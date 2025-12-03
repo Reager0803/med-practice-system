@@ -1,15 +1,24 @@
 package com.softwareengineering.medicalProject.services;
 
-import com.softwareengineering.medicalProject.models.Procedure;
-import com.softwareengineering.medicalProject.repositories.ProcedureRepository;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.softwareengineering.medicalProject.models.PatientHistory;
+import com.softwareengineering.medicalProject.models.Procedure;
+import com.softwareengineering.medicalProject.repositories.PatientHistoryRepository;
+import com.softwareengineering.medicalProject.repositories.ProcedureRepository;
 
 @Service
 public class ProcedureService {
     private final ProcedureRepository procedureRepository;
+    private final PatientHistoryRepository patientHistoryRepository;
 
-    public ProcedureService(ProcedureRepository procedureRepository) {
+    public ProcedureService(ProcedureRepository procedureRepository, PatientHistoryRepository patientHistoryRepository) {
         this.procedureRepository = procedureRepository;
+        this.patientHistoryRepository = patientHistoryRepository;
     }
 
     public Iterable<Procedure> getAllProcedures() {
@@ -35,12 +44,20 @@ public class ProcedureService {
         if (procedure == null) {
             procedure = new Procedure();
         }
-        procedure.setId(id);
         procedure.setProcedureName(procedureName);
         return procedureRepository.save(procedure);
     }
 
     public void deleteProcedure(Long id) {
+        List<PatientHistory> histories = patientHistoryRepository.findByProcedureIDKey(id);
+        
+        if (!histories.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, 
+                "Cannot delete Procedure ID " + id + " because it has " + histories.size() + " associated history records."
+            );
+        }
+
         procedureRepository.deleteById(id);
     }
 }

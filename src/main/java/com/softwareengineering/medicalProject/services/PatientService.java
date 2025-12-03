@@ -1,16 +1,24 @@
 package com.softwareengineering.medicalProject.services;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.softwareengineering.medicalProject.models.Patient;
+import com.softwareengineering.medicalProject.models.PatientHistory;
+import com.softwareengineering.medicalProject.repositories.PatientHistoryRepository;
 import com.softwareengineering.medicalProject.repositories.PatientRepository;
 
 @Service
 public class PatientService {
     private final PatientRepository patientRepository;
+    private final PatientHistoryRepository patientHistoryRepository;
 
-    public PatientService(PatientRepository patientRepository) {
+    public PatientService(PatientRepository patientRepository, PatientHistoryRepository patientHistoryRepository) {
         this.patientRepository = patientRepository;
+        this.patientHistoryRepository = patientHistoryRepository;
     }
 
     public Iterable<Patient> getAllPatients() {
@@ -62,18 +70,30 @@ public class PatientService {
     }
 
     public void deletePatient(Long id, String lastName, String middleName, String firstName) {
-        Patient patient = null;
+        Patient patientToDelete = null;
+
         if (id != 0L) {
-            patientRepository.deleteById(id);
+            patientToDelete = patientRepository.findById(id).orElse(null);
         } else if (!lastName.isEmpty() && !middleName.isEmpty() && !firstName.isEmpty()) {
-            patient = patientRepository.findByLastNameAndMiddleNameAndFirstName(lastName, middleName, firstName).orElse(null);
+            patientToDelete = patientRepository.findByLastNameAndMiddleNameAndFirstName(lastName, middleName, firstName).orElse(null);
         } else if (!lastName.isEmpty() && !firstName.isEmpty()) {
-            patient = patientRepository.findByLastNameAndFirstName(lastName, firstName).orElse(null);
+            patientToDelete = patientRepository.findByLastNameAndFirstName(lastName, firstName).orElse(null);
         }
 
-        if (patient != null) {
-            patientRepository.delete(patient);
+        if (patientToDelete == null) {
+            return; 
         }
+        
+        Long patientId = patientToDelete.getId();
+        List<PatientHistory> histories = patientHistoryRepository.findByPatientIDKey(patientId);
 
+        if (!histories.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, 
+                "Cannot delete Patient ID " + patientId + " (" + patientToDelete.getFirstName() + " " + patientToDelete.getLastName() + ") because they have " + histories.size() + " associated history records."
+            );
+        }
+        
+        patientRepository.delete(patientToDelete);
     }
 }
