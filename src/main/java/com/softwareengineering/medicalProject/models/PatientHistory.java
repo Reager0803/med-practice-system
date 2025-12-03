@@ -1,10 +1,13 @@
 package com.softwareengineering.medicalProject.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
@@ -14,12 +17,10 @@ public class PatientHistory {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @JsonIgnore
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "patientID")
     private Long patientIDKey;
 
-    @JsonIgnore
 //    @ManyToMany(fetch = FetchType.LAZY)
     private Long procedureIDKey;
 
