@@ -3,12 +3,7 @@ package com.softwareengineering.medicalProject.ui;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
-
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -19,11 +14,9 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softwareengineering.medicalProject.models.Patient;
-
 
 // PatientUI class provides the UI for managing Patient records,
 // it includes a table view and buttons for CRUD operations,
@@ -32,6 +25,7 @@ public class PatientUI extends JFrame {
 
     private JTable patientTable;
     private DefaultTableModel tableModel;
+    private HttpHelper httpHelper; 
     private static final String BASE_URL = "http://localhost:8080";
 
     private static final String[] COLUMN_NAMES = {
@@ -39,13 +33,15 @@ public class PatientUI extends JFrame {
             "Phone", "Age", "Height (in)", "Weight (lbs)", "Insurance", "Doctor"
     };
 
-    // Constructor initializes the frame, and sets up the table model
+    // Constructor initializes the frame, sets up the table model, and initializes HttpHelper
     // Adds buttons for the CRUD operations
     public PatientUI() {
         super("Patient Manager");
         setSize(1000, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        httpHelper = new HttpHelper(this); 
 
         tableModel = new DefaultTableModel(COLUMN_NAMES, 0) {
             @Override
@@ -98,130 +94,13 @@ public class PatientUI extends JFrame {
         add(buttonPanel, BorderLayout.SOUTH);
         loadPatients();
         setVisible(true);
-        System.out.println("DEBUG: PatientUI initialized and displayed.");
-    }
-
-    // HTTP GET request to the url provided
-    // returns the response body as a String, or null if failed
-    private String httpGET(String urlStr) {
-        try {
-            URL url = new URL(urlStr);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod("GET");
-            con.connect();
-
-            int status = con.getResponseCode();
-            if (status != HttpURLConnection.HTTP_OK) {
-                BufferedReader errReader = new BufferedReader(new InputStreamReader(con.getErrorStream()));
-                StringBuilder errorResponse = new StringBuilder();
-                String errLine;
-                while ((errLine = errReader.readLine()) != null) {
-                    errorResponse.append(errLine);
-                }
-                errReader.close();
-                JOptionPane.showMessageDialog(this, "GET error (Status " + status + "): " + errorResponse.toString());
-                System.out.println("DEBUG: httpGET failed with status " + status + " for URL: " + urlStr);
-                return null;
-            }
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-            StringBuilder response = new StringBuilder();
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
-
-            reader.close();
-            con.disconnect();
-            System.out.println("DEBUG: httpGET success for " + urlStr + ". Response length: " + response.length());
-            return response.toString();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Network/GET error: " + e.getMessage());
-            e.printStackTrace();
-            System.out.println("DEBUG: httpGET network error for URL: " + urlStr);
-            return null;
-        }
-    }
-
-    // Helper for POST
-    private String httpPOST(String urlStr) {
-        String result = sendRequest("POST", urlStr);
-        System.out.println("DEBUG: httpPOST request completed for: " + urlStr);
-        return result;
-    }
-
-    // Helper for PUT
-    private String httpPUT(String urlStr) {
-        String result = sendRequest("PUT", urlStr);
-        System.out.println("DEBUG: httpPUT request completed for: " + urlStr);
-        return result;
-    }
-
-    // Helper for DELETE
-    private String httpDELETE(String urlStr) {
-        String result = sendRequest("DELETE", urlStr);
-        System.out.println("DEBUG: httpDELETE request completed for: " + urlStr);
-        return result;
-    }
-
-    // Generic method to send non-GET requests
-    // takes the method (POST, PUT, or DELETE), as a parameter
-    // returns status (OK or error)
-    private String sendRequest(String method, String urlStr) {
-        try {
-            URL url = new URL(urlStr);
-            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setRequestMethod(method);
-            con.connect();
-
-            int status = con.getResponseCode();
-            if (status >= 200 && status < 300) {
-                try {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
- 
-                    reader.close();
-                    System.out.println("DEBUG: sendRequest (" + method + ") successful for URL: " + urlStr);
-                    return "OK";
-                } catch (Exception e) {
-                    System.out.println("DEBUG: sendRequest (" + method + ") failed to read response stream for URL: " + urlStr);
-                    return "error";
-                }
-            } else {
-                BufferedReader errReader = new BufferedReader(new InputStreamReader(con.getErrorStream()));
-                StringBuilder errorResponse = new StringBuilder();
-                String errLine;
- 
-                while ((errLine = errReader.readLine()) != null) {
-                    errorResponse.append(errLine);
-                }
- 
-                errReader.close();
-                JOptionPane.showMessageDialog(this, method + " error (Status " + status + "): " + errorResponse.toString());
-                System.out.println("DEBUG: sendRequest (" + method + ") failed with status " + status + " for URL: " + urlStr);
-                return null;
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Network/" + method + " error: " + e.getMessage());
-            e.printStackTrace();
-            System.out.println("DEBUG: sendRequest (" + method + ") network error for URL: " + urlStr);
-            return null;
-        }
     }
 
     // Retrieves all patient records from the backend, and populates the JTable
     private void loadPatients() {
         tableModel.setRowCount(0);
-
-        String json = httpGET(BASE_URL + "/patients");
+        String json = httpHelper.httpGET(BASE_URL + "/patients");
         if (json == null) {
-            System.out.println("DEBUG: loadPatients failed to get JSON data.");
             return;
         }
 
@@ -247,14 +126,11 @@ public class PatientUI extends JFrame {
                         patient.getPrimaryCareDoctor()
                 });
             }
-            System.out.println("DEBUG: loadPatients finished. Total patients loaded: " + patients.size());
         }
         catch (Exception e) {
             JOptionPane.showMessageDialog(this, "JSON Parsing error: " + e.getMessage());
             e.printStackTrace();
-            System.out.println("DEBUG: loadPatients JSON parsing failed.");
         }
-        System.out.println("DEBUG: loadPatients method ended.");
     }
 
     // Displays a JOptionPane with input fields for patient details (used by add/edit)
@@ -288,7 +164,7 @@ public class PatientUI extends JFrame {
         panel.add(middleNameField);
         panel.add(new JLabel("First Name:"));
         panel.add(firstNameField);
-        panel.add(new JLabel("--- Contact Info ---"));
+        panel.add(new JLabel("Contact Info:"));
         panel.add(new JLabel("")); 
         panel.add(new JLabel("Address:"));
         panel.add(addressField);
@@ -300,7 +176,7 @@ public class PatientUI extends JFrame {
         panel.add(zipField);
         panel.add(new JLabel("Phone:"));
         panel.add(phoneField);
-        panel.add(new JLabel("--- Medical Info ---"));
+        panel.add(new JLabel("Medical Info:"));
         panel.add(new JLabel("")); 
         panel.add(new JLabel("Age:"));
         panel.add(ageField);
@@ -320,7 +196,6 @@ public class PatientUI extends JFrame {
             try {
                 if (lastNameField.getText().isBlank() || firstNameField.getText().isBlank()) {
                      JOptionPane.showMessageDialog(this, "Last Name and First Name are required.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                     System.out.println("DEBUG: promptForPatientFields validation failed (Missing name).");
                      return null;
                 }
 
@@ -349,8 +224,6 @@ public class PatientUI extends JFrame {
                 Long.parseLong(heightStr);
                 Long.parseLong(weightStr);
 
-                System.out.println("DEBUG: promptForPatientFields finished. Returning valid fields.");
-
                 return new String[]{
                         lastNameField.getText(),
                         middleNameField.getText(),
@@ -368,26 +241,10 @@ public class PatientUI extends JFrame {
                 };
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Age, Height, and Weight must be valid numbers.", "Validation Error", JOptionPane.ERROR_MESSAGE);
-                System.out.println("DEBUG: promptForPatientFields validation failed (NumberFormat).");
                 return null;
             }
         }
-        System.out.println("DEBUG: promptForPatientFields canceled or rejected.");
         return null;
-    }
-
-    // URL-encodes a string param to safely transmit it in an HTTP query
-    private String encodeParam(String param) {
-        if (param == null)
-            return "";
-        try {
-            String encoded = java.net.URLEncoder.encode(param, "UTF-8");
-            System.out.println("DEBUG: encodeParam original: '" + param + "', encoded: '" + encoded + "'");
-            return java.net.URLEncoder.encode(param, "UTF-8");
-        } catch (java.io.UnsupportedEncodingException e) {
-            System.out.println("DEBUG: encodeParam fallback used for: '" + param + "'");
-            return param.replace(" ", "%20");
-        }
     }
 
     // Handles the "Add Patient" action, promts the user for data, constructs the API URL,
@@ -398,23 +255,22 @@ public class PatientUI extends JFrame {
             return;
 
         String url = BASE_URL + "/addPatient" +
-                "?lastName=" + encodeParam(fields[0]) +
-                "&middleName=" + encodeParam(fields[1]) +
-                "&firstName=" + encodeParam(fields[2]) +
-                "&address=" + encodeParam(fields[3]) +
-                "&city=" + encodeParam(fields[4]) +
-                "&state=" + encodeParam(fields[5]) +
-                "&zip=" + encodeParam(fields[6]) +
-                "&phone=" + encodeParam(fields[7]) +
+                "?lastName=" + httpHelper.encodeParam(fields[0]) +
+                "&middleName=" + httpHelper.encodeParam(fields[1]) +
+                "&firstName=" + httpHelper.encodeParam(fields[2]) +
+                "&address=" + httpHelper.encodeParam(fields[3]) +
+                "&city=" + httpHelper.encodeParam(fields[4]) +
+                "&state=" + httpHelper.encodeParam(fields[5]) +
+                "&zip=" + httpHelper.encodeParam(fields[6]) +
+                "&phone=" + httpHelper.encodeParam(fields[7]) +
                 "&age=" + fields[8] +
                 "&height=" + fields[9] +
                 "&weight=" + fields[10] +
-                "&insurance=" + encodeParam(fields[11]) +
-                "&doctor=" + encodeParam(fields[12]);
+                "&insurance=" + httpHelper.encodeParam(fields[11]) +
+                "&doctor=" + httpHelper.encodeParam(fields[12]);
 
-        httpPOST(url);
+        httpHelper.httpPOST(url);
         loadPatients();
-        System.out.println("DEBUG: addPatient completed and table refreshed.");
     }
 
     // Handles the "Edit Patient" action, gets selected row data, prompts user for updates,
@@ -449,23 +305,22 @@ public class PatientUI extends JFrame {
 
         String url = BASE_URL + "/upsertPatient" +
                 "?id=" + id +
-                "&lastName=" + encodeParam(fields[0]) +
-                "&middleName=" + encodeParam(fields[1]) +
-                "&firstName=" + encodeParam(fields[2]) +
-                "&address=" + encodeParam(fields[3]) +
-                "&city=" + encodeParam(fields[4]) +
-                "&state=" + encodeParam(fields[5]) +
-                "&zip=" + encodeParam(fields[6]) +
-                "&phone=" + encodeParam(fields[7]) +
+                "&lastName=" + httpHelper.encodeParam(fields[0]) +
+                "&middleName=" + httpHelper.encodeParam(fields[1]) +
+                "&firstName=" + httpHelper.encodeParam(fields[2]) +
+                "&address=" + httpHelper.encodeParam(fields[3]) +
+                "&city=" + httpHelper.encodeParam(fields[4]) +
+                "&state=" + httpHelper.encodeParam(fields[5]) +
+                "&zip=" + httpHelper.encodeParam(fields[6]) +
+                "&phone=" + httpHelper.encodeParam(fields[7]) +
                 "&age=" + fields[8] +
                 "&height=" + fields[9] +
                 "&weight=" + fields[10] +
-                "&insurance=" + encodeParam(fields[11]) +
-                "&doctor=" + encodeParam(fields[12]);
+                "&insurance=" + httpHelper.encodeParam(fields[11]) +
+                "&doctor=" + httpHelper.encodeParam(fields[12]);
 
-        httpPUT(url);
+        httpHelper.httpPUT(url);
         loadPatients();
-        System.out.println("DEBUG: editPatient completed and table refreshed.");
     }
 
     // Handles the Delete Patient action, confirms deletion, sends an HTTP DELETE request,
@@ -483,14 +338,11 @@ public class PatientUI extends JFrame {
         if (confirm != JOptionPane.YES_OPTION)
             return;
 
-        httpDELETE(BASE_URL + "/removePatient?id=" + id);
+        httpHelper.httpDELETE(BASE_URL + "/removePatient?id=" + id);
         loadPatients();
-        System.out.println("DEBUG: deletePatient completed and table refreshed.");
     }
 
-    // Main entry point for the application
     public static void main(String[] args) {
-        System.out.println("DEBUG: Starting PatientUI application...");
         SwingUtilities.invokeLater(PatientUI::new);
     }
 }
